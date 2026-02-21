@@ -15,6 +15,7 @@ export class Player {
   pickupRadius: number = 80;
   lastDamageTime: number = 0;
   invulnDuration: number = 500;
+  extraInvulnUntil: number = 0;
 
   keys: { [key: string]: boolean } = {};
 
@@ -41,12 +42,17 @@ export class Player {
     this.y += dy * this.speed;
   }
 
-  takeDamage(amount: number) {
+  takeDamage(amount: number): boolean {
     const now = Date.now();
+    if (now < this.extraInvulnUntil) {
+      return false;
+    }
     if (now - this.lastDamageTime > this.invulnDuration) {
       this.hp -= amount;
       this.lastDamageTime = now;
+      return true;
     }
+    return false;
   }
 
   gainExp(amount: number) {

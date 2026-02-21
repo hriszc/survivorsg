@@ -45,29 +45,45 @@ export class Snake {
   segments: Segment[] = [];
   speed: number;
   damage: number;
+  isBoss: boolean;
 
-  constructor(x: number, y: number, length: number, hp: number, speed: number, damage: number, color: string) {
+  constructor(
+    x: number,
+    y: number,
+    length: number,
+    hp: number,
+    speed: number,
+    damage: number,
+    color: string,
+    segmentRadius: number = 12,
+    isBoss: boolean = false,
+  ) {
     this.speed = speed;
     this.damage = damage;
+    this.isBoss = isBoss;
     for (let i = 0; i < length; i++) {
-      const seg = new Segment(x - i * 20, y, hp, 12, color);
+      const spacing = Math.max(20, Math.round(segmentRadius * 1.8));
+      const seg = new Segment(x - i * spacing, y, hp, segmentRadius, color);
       if (i === 0) seg.isHead = true;
       this.segments.push(seg);
     }
   }
 
-  update(player: Player) {
-    if (this.segments.length === 0) return;
+  update(player: Player, speedMultiplier: number = 1): number {
+    if (this.segments.length === 0) return 0;
+    let damageDealt = 0;
 
     // Head moves towards player
     const head = this.segments[0];
     const dir = normalize({ x: player.x - head.x, y: player.y - head.y });
-    head.x += dir.x * this.speed;
-    head.y += dir.y * this.speed;
+    head.x += dir.x * this.speed * speedMultiplier;
+    head.y += dir.y * this.speed * speedMultiplier;
 
     // Check collision with player
     if (distance(head, player) < head.radius + player.radius) {
-      player.takeDamage(this.damage);
+      if (player.takeDamage(this.damage)) {
+        damageDealt += this.damage;
+      }
     }
 
     // Body follows
@@ -86,12 +102,25 @@ export class Snake {
       
       // Body collision with player
       if (distance(follower, player) < follower.radius + player.radius) {
-        player.takeDamage(this.damage * 0.5); // Body does less damage
+        const bodyDamage = this.damage * 0.5;
+        if (player.takeDamage(bodyDamage)) {
+          damageDealt += bodyDamage;
+        }
       }
     }
+    return damageDealt;
   }
 
   draw(ctx: CanvasRenderingContext2D, camera: Vector2) {
+    if (this.isBoss && this.segments.length > 0) {
+      const head = this.segments[0];
+      ctx.beginPath();
+      ctx.arc(head.x - camera.x, head.y - camera.y, head.radius + 10, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(251, 191, 36, 0.9)';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+    }
+
     // Draw from tail to head so head is on top
     for (let i = this.segments.length - 1; i >= 0; i--) {
       this.segments[i].draw(ctx, camera);

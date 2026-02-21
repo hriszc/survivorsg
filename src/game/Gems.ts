@@ -19,11 +19,11 @@ export class Gem {
     else this.color = '#ef4444'; // red
   }
 
-  update(player: Player) {
+  update(player: Player, expMultiplier: number = 1) {
     if (this.isCollected) {
       const dist = distance(this, player);
       if (dist < player.radius) {
-        player.gainExp(this.exp);
+        player.gainExp(this.exp * expMultiplier);
         return true; // remove
       }
       const dir = normalize({ x: player.x - this.x, y: player.y - this.y });
